@@ -1,4 +1,578 @@
-<script type="module">
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>论文投稿记录管理系统</title>
+    <link rel="icon" href="hhxc.ico" type="image/x-icon">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 25px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        .controls {
+            padding: 25px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:not(:disabled):hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #56ab2f 0%, #a8e6cf 100%);
+            color: white;
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
+            color: white;
+        }
+
+        .btn-info {
+            background: linear-gradient(135deg, #17a2b8 0%, #20c997 100%);
+            color: white;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .table-container {
+            padding: 25px;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+        }
+
+        th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 10px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 13px;
+            white-space: nowrap;
+        }
+
+        td {
+            padding: 12px 10px;
+            border-bottom: 1px solid #f1f3f4;
+            text-align: center;
+            font-size: 13px;
+            max-width: 150px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        tr:hover {
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 500;
+            color: white;
+        }
+
+        .status-Submitted { background: #17a2b8; }
+        .status-Under-Review { background: #ffc107; color: #212529; }
+        .status-Accepted { background: #28a745; }
+        .status-Rejected { background: #dc3545; }
+        .status-Reject-\&-Submit { background: #dc3545; }
+        .status-Awaiting-AE-Recommendation { background: #6f42c1; }
+        .status-Awaiting-EIC-Decision { background: #20c997; }
+        .status-Decision-in-Process { background: #007bff; }
+        .status-RRC { background: #6c757d; }
+        .status-Custom { background: #fd7e14; }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background: white;
+            margin: 2% auto;
+            padding: 0;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 800px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 25px;
+            border-radius: 15px 15px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-body {
+            padding: 25px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .close {
+            color: white;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: opacity 0.3s ease;
+        }
+
+        .close:hover {
+            opacity: 0.7;
+        }
+
+        .progress-timeline {
+            margin-top: 15px;
+        }
+
+        .timeline-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 8px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            flex-wrap: wrap;
+        }
+
+        .timeline-date {
+            font-weight: 600;
+            margin-right: 10px;
+            min-width: 80px;
+        }
+
+        .timeline-status {
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+            margin-right: 10px;
+        }
+        
+        .timeline-note {
+            flex: 1;
+            font-size: 12px;
+            color: #666;
+            margin-right: 10px;
+            font-style: italic;
+        }
+        
+        .data-info {
+            background: #e7f3ff;
+            border: 1px solid #b3d9ff;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 0 25px 25px;
+            font-size: 14px;
+            text-align: center;
+        }
+        
+        .data-info p {
+            margin: 5px 0 15px;
+        }
+
+        .new-progress-entry {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+            align-items: flex-start;
+            flex-wrap: wrap;
+        }
+        .new-progress-entry input[type="text"],
+        .new-progress-entry select,
+        .new-progress-entry textarea {
+            flex: 1;
+            min-width: 120px;
+            padding: 8px;
+            border: 1px solid #ced4da;
+            border-radius: 5px;
+        }
+        .new-progress-entry textarea {
+            min-height: 60px;
+            resize: vertical;
+        }
+        .new-progress-entry button {
+            padding: 8px 15px;
+            border-radius: 5px;
+            align-self: flex-start;
+        }
+
+        /* 错误信息样式 */
+        .error-message {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 25px;
+        }
+
+        /* 兼容性警告样式 */
+        .compatibility-warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 25px;
+            display: none;
+        }
+
+        /* Loading状态 */
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        @media (max-width: 768px) {
+            .controls {
+                flex-direction: column;
+            }
+            
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            th, td {
+                font-size: 11px;
+                padding: 8px 5px;
+            }
+            .timeline-item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .timeline-date, .timeline-status, .timeline-note {
+                margin-right: 0;
+                margin-bottom: 5px;
+            }
+            .new-progress-entry {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📚 论文投稿记录管理系统</h1>
+            <p>高效管理您的学术投稿过程 - 文件系统版</p>
+        </div>
+
+        <div id="compatibilityWarning" class="compatibility-warning">
+            <strong>⚠️ 浏览器兼容性提示</strong>
+            <p>您的浏览器可能不支持文件系统访问API。请使用最新版本的Chrome、Edge或其他支持的浏览器。</p>
+        </div>
+
+        <div class="data-info" id="dataInfo">
+            <strong>📌 数据存储说明</strong>
+            <p>本系统使用文件系统API读取和保存数据，请选择一个专用文件夹来存放所有投稿记录(.json文件)。</p>
+            <button id="selectDirBtn" class="btn btn-primary">📂 选择工作文件夹</button>
+        </div>
+
+        <div id="mainContent" style="display: none;">
+            <div class="controls">
+                <button class="btn btn-primary" onclick="openModal()">📝 新建投稿</button>
+                <button class="btn btn-success" onclick="exportData()">📊 导出CSV</button>
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="🔍 搜索论文题目或期刊..." oninput="searchSubmissions()">
+                </div>
+            </div>
+
+            <div class="table-container">
+                <table id="submissionsTable">
+                    <thead>
+                        <tr>
+                            <th>编号</th>
+                            <th>短标题</th>
+                            <th>论文题目</th>
+                            <th>投稿期刊</th>
+                            <th>影响因子</th>
+                            <th>中科院分区</th>
+                            <th>投稿时间</th>
+                            <th>当前状态</th>
+                            <th>更新时间</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="submissionsBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="submissionModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">新建投稿记录</h2>
+                <span class="close" onclick="closeModal()">×</span>
+            </div>
+            <div class="modal-body">
+                <form id="submissionForm">
+                    <input type="hidden" id="editingFileName">
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="submissionNumber">编号 *</label>
+                            <input type="number" id="submissionNumber" min="1" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="shortTitle">短标题 *</label>
+                            <input type="text" id="shortTitle" required placeholder="用于文件命名，如：MyPaper_ML">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="paperTitle">论文题目 *</label>
+                            <input type="text" id="paperTitle" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="authors">论文作者 *</label>
+                            <input type="text" id="authors" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="journal">投稿期刊 *</label>
+                            <input type="text" id="journal" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="impactFactor">影响因子</label>
+                            <input type="number" id="impactFactor" step="0.001" placeholder="如：3.758">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="journalLevel">期刊级别</label>
+                            <select id="journalLevel">
+                                <option value="SCI Q1">SCI Q1</option>
+                                <option value="SCI Q2">SCI Q2</option>
+                                <option value="SCI Q3">SCI Q3</option>
+                                <option value="SCI Q4">SCI Q4</option>
+                                <option value="EI">EI</option>
+                                <option value="核心期刊">核心期刊</option>
+                                <option value="普通期刊">普通期刊</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="casLevel">中科院分区</label>
+                            <select id="casLevel">
+                                <option value="">请选择</option>
+                                <option value="1区">1区</option>
+                                <option value="1区Top">1区Top</option>
+                                <option value="2区">2区</option>
+                                <option value="2区Top">2区Top</option>
+                                <option value="3区">3区</option>
+                                <option value="4区">4区</option>
+                                <option value="不适用">不适用</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="reviewerCount">审稿人数量</label>
+                            <input type="number" id="reviewerCount" min="0" max="10">
+                        </div>
+                        <div class="form-group">
+                            <label for="journalWebsite">期刊网站</label>
+                            <input type="url" id="journalWebsite" placeholder="期刊官方网站地址">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="submissionWebsite">投稿网站</label>
+                        <input type="url" id="submissionWebsite" placeholder="投稿系统网站地址">
+                    </div>
+
+                    <div class="form-group">
+                        <label>投稿进度记录</label>
+                        <div id="progressTimeline" class="progress-timeline"></div>
+                        <div class="new-progress-entry">
+                            <input type="text" id="newProgressDate" placeholder="日期 (YYYY.M.D)" class="flatpickr-input">
+                            <select id="newProgressStatus">
+                                <option value="">Select Status</option>
+                                <option value="Submitted">Submitted</option>
+                                <option value="Under Review">Under Review</option>
+                                <option value="Revision">Revision</option>
+                                <option value="Accept">Accept</option>
+                                <option value="Reject">Reject</option>
+                                <option value="Reject & Submit">Reject & Submit</option>
+                                <option value="Awaiting AE Recommendation">Awaiting AE Recommendation</option>
+                                <option value="Awaiting EIC Decision">Awaiting EIC Decision</option>
+                                <option value="Decision in Process">Decision in Process</option>
+                                <option value="RRC">RRC</option>
+                                <option value="Custom">Custom...</option>
+                            </select>
+                            <textarea id="newProgressNote" placeholder="备注信息（可选）" rows="2"></textarea>
+                            <input type="text" id="customStatusInput" placeholder="Enter custom status" style="display:none;">
+                            <button type="button" class="btn btn-warning" onclick="addProgressEntry()">➕ Add Progress</button>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="reviewerStatus">审稿人情况</label>
+                        <textarea id="reviewerStatus" rows="3" placeholder="请描述审稿人的反馈情况..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="notes">备注</label>
+                        <textarea id="notes" rows="3" placeholder="其他需要记录的信息..."></textarea>
+                    </div>
+
+                    <div style="text-align: right; margin-top: 25px;">
+                        <button type="button" class="btn btn-danger" onclick="closeModal()">取消</button>
+                        <button type="submit" class="btn btn-primary">💾 保存</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
     // 1. 引入必要的 Firebase 函数 (使用完整的网址链接)
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getFirestore, collection, getDocs, setDoc, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
@@ -335,3 +909,9 @@
     });
 
 </script>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr" async></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/zh.js" async></script>
+</body>
+</html>
