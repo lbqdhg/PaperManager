@@ -3,168 +3,58 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>论文投稿记录管理系统</title>
+    <title>论文投稿记录管理系统v2.0</title>
     <link rel="icon" href="hhxc.ico" type="image/x-icon">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Microsoft YaHei', Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
-
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 15px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
-        }
-
-        .header {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-            color: white;
-            padding: 25px;
-            text-align: center;
-        }
-
-        .header h1 {
-            font-size: 2rem;
-            margin-bottom: 10px;
-        }
-
-        .controls {
-            padding: 25px;
-            background: #f8f9fa;
-            border-bottom: 1px solid #e9ecef;
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-        }
-
-        .btn {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            display: inline-block;
-        }
+        /* --- 基础样式 --- */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Microsoft YaHei', Arial, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 20px; }
         
-        .btn:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
+        /* --- 登录层样式 --- */
+        #loginOverlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); z-index: 9999;
+            display: flex; justify-content: center; align-items: center;
         }
-
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+        .login-box {
+            background: white; padding: 40px; border-radius: 15px;
+            width: 350px; text-align: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
         }
-
-        .btn-primary:not(:disabled):hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        .login-box h2 { color: #333; margin-bottom: 20px; }
+        .login-box input {
+            width: 100%; padding: 12px; margin-bottom: 15px;
+            border: 1px solid #ddd; border-radius: 5px;
         }
-
-        .btn-success {
-            background: linear-gradient(135deg, #56ab2f 0%, #a8e6cf 100%);
-            color: white;
+        .login-box button {
+            width: 100%; padding: 12px; background: #667eea; color: white;
+            border: none; border-radius: 5px; cursor: pointer; font-size: 16px;
         }
+        .login-box button:hover { background: #764ba2; }
+        .login-error { color: red; font-size: 14px; margin-top: 10px; display: none; }
 
-        .btn-warning {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            color: white;
-        }
-
-        .btn-danger {
-            background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
-            color: white;
-        }
-
-        .btn-info {
-            background: linear-gradient(135deg, #17a2b8 0%, #20c997 100%);
-            color: white;
-        }
-
-        .search-box {
-            flex: 1;
-            min-width: 200px;
-        }
-
-        .search-box input {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #e9ecef;
-            border-radius: 8px;
-            font-size: 14px;
-            transition: border-color 0.3s ease;
-        }
-
-        .search-box input:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-
-        .table-container {
-            padding: 25px;
-            overflow-x: auto;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            background: white;
-            border-radius: 10px;
-            overflow: hidden;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
-        }
-
-        th {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 15px 10px;
-            text-align: center;
-            font-weight: 600;
-            font-size: 13px;
-            white-space: nowrap;
-        }
-
-        td {
-            padding: 12px 10px;
-            border-bottom: 1px solid #f1f3f4;
-            text-align: center;
-            font-size: 13px;
-            max-width: 150px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
-        tr:hover {
-            background: rgba(102, 126, 234, 0.05);
-        }
-
-        .status-badge {
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 11px;
-            font-weight: 500;
-            color: white;
-        }
-
+        /* --- 主界面样式 (原有) --- */
+        .container { max-width: 1400px; margin: 0 auto; background: rgba(255, 255, 255, 0.95); border-radius: 15px; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1); overflow: hidden; display: none; /* 默认隐藏，登录后显示 */ }
+        .header { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; padding: 25px; text-align: center; position: relative;}
+        .logout-btn { position: absolute; right: 20px; top: 25px; background: rgba(255,255,255,0.2); border: 1px solid white; color: white; padding: 5px 15px; border-radius: 5px; cursor: pointer; }
+        .header h1 { font-size: 2rem; margin-bottom: 10px; }
+        .controls { padding: 25px; background: #f8f9fa; border-bottom: 1px solid #e9ecef; display: flex; gap: 15px; flex-wrap: wrap; }
+        .btn { padding: 12px 24px; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.3s ease; text-decoration: none; display: inline-block; }
+        .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        .btn-success { background: linear-gradient(135deg, #56ab2f 0%, #a8e6cf 100%); color: white; }
+        .btn-warning { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; }
+        .btn-danger { background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%); color: white; }
+        .search-box { flex: 1; min-width: 200px; }
+        .search-box input { width: 100%; padding: 12px; border: 2px solid #e9ecef; border-radius: 8px; font-size: 14px; }
+        .table-container { padding: 25px; overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08); }
+        th { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 10px; text-align: center; font-weight: 600; font-size: 13px; white-space: nowrap; }
+        td { padding: 12px 10px; border-bottom: 1px solid #f1f3f4; text-align: center; font-size: 13px; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        tr:hover { background: rgba(102, 126, 234, 0.05); }
+        .status-badge { padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 500; color: white; }
+        
+        /* 状态颜色 */
         .status-Submitted { background: #17a2b8; }
         .status-Under-Review { background: #ffc107; color: #212529; }
         .status-Accepted { background: #28a745; }
@@ -176,269 +66,84 @@
         .status-RRC { background: #6c757d; }
         .status-Custom { background: #fd7e14; }
 
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(5px);
-        }
-
-        .modal-content {
-            background: white;
-            margin: 2% auto;
-            padding: 0;
-            border-radius: 15px;
-            width: 90%;
-            max-width: 800px;
-            max-height: 90vh;
-            overflow-y: auto;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-        }
-
-        .modal-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px 25px;
-            border-radius: 15px 15px 0 0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .modal-body {
-            padding: 25px;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: #333;
-        }
-
-        .form-group input,
-        .form-group select,
-        .form-group textarea {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #e9ecef;
-            border-radius: 8px;
-            font-size: 14px;
-            transition: border-color 0.3s ease;
-        }
-
-        .form-group input:focus,
-        .form-group select:focus,
-        .form-group textarea:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-        }
-
-        .close {
-            color: white;
-            font-size: 28px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: opacity 0.3s ease;
-        }
-
-        .close:hover {
-            opacity: 0.7;
-        }
-
-        .progress-timeline {
-            margin-top: 15px;
-        }
-
-        .timeline-item {
-            display: flex;
-            align-items: center;
-            margin-bottom: 10px;
-            padding: 8px;
-            background: #f8f9fa;
-            border-radius: 5px;
-            flex-wrap: wrap;
-        }
-
-        .timeline-date {
-            font-weight: 600;
-            margin-right: 10px;
-            min-width: 80px;
-        }
-
-        .timeline-status {
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: 500;
-            margin-right: 10px;
-        }
+        /* 模态框样式 */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(5px); }
+        .modal-content { background: white; margin: 2% auto; padding: 0; border-radius: 15px; width: 90%; max-width: 800px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3); }
+        .modal-header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px 25px; border-radius: 15px 15px 0 0; display: flex; justify-content: space-between; align-items: center; }
+        .modal-body { padding: 25px; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: #333; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 12px; border: 2px solid #e9ecef; border-radius: 8px; font-size: 14px; transition: border-color 0.3s ease; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .close { color: white; font-size: 28px; font-weight: bold; cursor: pointer; }
         
-        .timeline-note {
-            flex: 1;
-            font-size: 12px;
-            color: #666;
-            margin-right: 10px;
-            font-style: italic;
-        }
-        
-        .data-info {
-            background: #e7f3ff;
-            border: 1px solid #b3d9ff;
-            border-radius: 8px;
-            padding: 20px;
-            margin: 0 25px 25px;
-            font-size: 14px;
-            text-align: center;
-        }
-        
-        .data-info p {
-            margin: 5px 0 15px;
-        }
-
-        .new-progress-entry {
-            display: flex;
-            gap: 10px;
-            margin-top: 10px;
-            align-items: flex-start;
-            flex-wrap: wrap;
-        }
-        .new-progress-entry input[type="text"],
-        .new-progress-entry select,
-        .new-progress-entry textarea {
-            flex: 1;
-            min-width: 120px;
-            padding: 8px;
-            border: 1px solid #ced4da;
-            border-radius: 5px;
-        }
-        .new-progress-entry textarea {
-            min-height: 60px;
-            resize: vertical;
-        }
-        .new-progress-entry button {
-            padding: 8px 15px;
-            border-radius: 5px;
-            align-self: flex-start;
-        }
-
-        /* 错误信息样式 */
-        .error-message {
-            background: #f8d7da;
-            border: 1px solid #f5c6cb;
-            color: #721c24;
-            padding: 15px;
-            border-radius: 8px;
-            margin: 15px 25px;
-        }
-
-        /* 兼容性警告样式 */
-        .compatibility-warning {
-            background: #fff3cd;
-            border: 1px solid #ffeaa7;
-            color: #856404;
-            padding: 15px;
-            border-radius: 8px;
-            margin: 15px 25px;
-            display: none;
-        }
-
-        /* Loading状态 */
-        .loading {
-            opacity: 0.6;
-            pointer-events: none;
-        }
+        /* 进度条 */
+        .progress-timeline { margin-top: 15px; }
+        .timeline-item { display: flex; align-items: center; margin-bottom: 10px; padding: 8px; background: #f8f9fa; border-radius: 5px; flex-wrap: wrap; }
+        .timeline-date { font-weight: 600; margin-right: 10px; min-width: 80px; }
+        .timeline-status { padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 500; margin-right: 10px; }
+        .timeline-note { flex: 1; font-size: 12px; color: #666; margin-right: 10px; font-style: italic; }
+        .new-progress-entry { display: flex; gap: 10px; margin-top: 10px; align-items: flex-start; flex-wrap: wrap; }
+        .new-progress-entry input[type="text"], .new-progress-entry select, .new-progress-entry textarea { flex: 1; min-width: 120px; padding: 8px; border: 1px solid #ced4da; border-radius: 5px; }
+        .new-progress-entry textarea { min-height: 60px; resize: vertical; }
 
         @media (max-width: 768px) {
-            .controls {
-                flex-direction: column;
-            }
-            
-            .form-row {
-                grid-template-columns: 1fr;
-            }
-            
-            th, td {
-                font-size: 11px;
-                padding: 8px 5px;
-            }
-            .timeline-item {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-            .timeline-date, .timeline-status, .timeline-note {
-                margin-right: 0;
-                margin-bottom: 5px;
-            }
-            .new-progress-entry {
-                flex-direction: column;
-                align-items: stretch;
-            }
+            .controls { flex-direction: column; }
+            .form-row { grid-template-columns: 1fr; }
+            th, td { font-size: 11px; padding: 8px 5px; }
+            .timeline-item { flex-direction: column; align-items: flex-start; }
         }
     </style>
 </head>
 <body>
-    <div class="container">
+
+    <div id="loginOverlay">
+        <div class="login-box">
+            <h2>🔒 身份验证</h2>
+            <p style="color: #666; margin-bottom: 20px; font-size: 13px;">本系统仅限管理员访问</p>
+            <form id="loginForm">
+                <input type="email" id="emailInput" placeholder="请输入邮箱" required>
+                <input type="password" id="passwordInput" placeholder="请输入密码" required>
+                <button type="submit" id="loginBtn">登录系统</button>
+            </form>
+            <div id="loginError" class="login-error">账号或密码错误</div>
+        </div>
+    </div>
+
+    <div class="container" id="mainContainer">
         <div class="header">
             <h1>📚 论文投稿记录管理系统</h1>
-            <p>高效管理您的学术投稿过程 - 文件系统版</p>
+            <button class="logout-btn" onclick="logout()">退出登录</button>
+            <p>云端同步 · 安全存储</p>
         </div>
 
-        <div id="compatibilityWarning" class="compatibility-warning">
-            <strong>⚠️ 浏览器兼容性提示</strong>
-            <p>您的浏览器可能不支持文件系统访问API。请使用最新版本的Chrome、Edge或其他支持的浏览器。</p>
-        </div>
-
-        <div class="data-info" id="dataInfo">
-            <strong>📌 数据存储说明</strong>
-            <p>本系统使用文件系统API读取和保存数据，请选择一个专用文件夹来存放所有投稿记录(.json文件)。</p>
-            <button id="selectDirBtn" class="btn btn-primary">📂 选择工作文件夹</button>
-        </div>
-
-        <div id="mainContent" style="display: none;">
-            <div class="controls">
-                <button class="btn btn-primary" onclick="openModal()">📝 新建投稿</button>
-                <button class="btn btn-success" onclick="exportData()">📊 导出CSV</button>
-                <div class="search-box">
-                    <input type="text" id="searchInput" placeholder="🔍 搜索论文题目或期刊..." oninput="searchSubmissions()">
-                </div>
+        <div class="controls">
+            <button class="btn btn-primary" onclick="openModal()">📝 新建投稿</button>
+            <button class="btn btn-success" onclick="exportData()">📊 导出CSV</button>
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="🔍 搜索论文题目或期刊..." oninput="searchSubmissions()">
             </div>
+        </div>
 
-            <div class="table-container">
-                <table id="submissionsTable">
-                    <thead>
-                        <tr>
-                            <th>编号</th>
-                            <th>短标题</th>
-                            <th>论文题目</th>
-                            <th>投稿期刊</th>
-                            <th>影响因子</th>
-                            <th>中科院分区</th>
-                            <th>投稿时间</th>
-                            <th>当前状态</th>
-                            <th>更新时间</th>
-                            <th>操作</th>
-                        </tr>
-                    </thead>
-                    <tbody id="submissionsBody">
-                    </tbody>
-                </table>
-            </div>
+        <div class="table-container">
+            <table id="submissionsTable">
+                <thead>
+                    <tr>
+                        <th>编号</th>
+                        <th>短标题</th>
+                        <th>论文题目</th>
+                        <th>投稿期刊</th>
+                        <th>影响因子</th>
+                        <th>中科院分区</th>
+                        <th>投稿时间</th>
+                        <th>当前状态</th>
+                        <th>更新时间</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="submissionsBody">
+                </tbody>
+            </table>
         </div>
     </div>
 
@@ -459,7 +164,7 @@
                         </div>
                         <div class="form-group">
                             <label for="shortTitle">短标题 *</label>
-                            <input type="text" id="shortTitle" required placeholder="用于文件命名，如：MyPaper_ML">
+                            <input type="text" id="shortTitle" required placeholder="如：MyPaper_ML">
                         </div>
                     </div>
 
@@ -481,7 +186,7 @@
                         </div>
                         <div class="form-group">
                             <label for="impactFactor">影响因子</label>
-                            <input type="number" id="impactFactor" step="0.001" placeholder="如：3.758">
+                            <input type="number" id="impactFactor" step="0.001">
                         </div>
                     </div>
 
@@ -520,20 +225,20 @@
                         </div>
                         <div class="form-group">
                             <label for="journalWebsite">期刊网站</label>
-                            <input type="url" id="journalWebsite" placeholder="期刊官方网站地址">
+                            <input type="url" id="journalWebsite">
                         </div>
                     </div>
 
                     <div class="form-group">
                         <label for="submissionWebsite">投稿网站</label>
-                        <input type="url" id="submissionWebsite" placeholder="投稿系统网站地址">
+                        <input type="url" id="submissionWebsite">
                     </div>
 
                     <div class="form-group">
                         <label>投稿进度记录</label>
                         <div id="progressTimeline" class="progress-timeline"></div>
                         <div class="new-progress-entry">
-                            <input type="text" id="newProgressDate" placeholder="日期 (YYYY.M.D)" class="flatpickr-input">
+                            <input type="text" id="newProgressDate" placeholder="日期" class="flatpickr-input">
                             <select id="newProgressStatus">
                                 <option value="">Select Status</option>
                                 <option value="Submitted">Submitted</option>
@@ -550,17 +255,17 @@
                             </select>
                             <textarea id="newProgressNote" placeholder="备注信息（可选）" rows="2"></textarea>
                             <input type="text" id="customStatusInput" placeholder="Enter custom status" style="display:none;">
-                            <button type="button" class="btn btn-warning" onclick="addProgressEntry()">➕ Add Progress</button>
+                            <button type="button" class="btn btn-warning" onclick="addProgressEntry()">➕</button>
                         </div>
                     </div>
 
                     <div class="form-group">
                         <label for="reviewerStatus">审稿人情况</label>
-                        <textarea id="reviewerStatus" rows="3" placeholder="请描述审稿人的反馈情况..."></textarea>
+                        <textarea id="reviewerStatus" rows="3"></textarea>
                     </div>
                     <div class="form-group">
                         <label for="notes">备注</label>
-                        <textarea id="notes" rows="3" placeholder="其他需要记录的信息..."></textarea>
+                        <textarea id="notes" rows="3"></textarea>
                     </div>
 
                     <div style="text-align: right; margin-top: 25px;">
@@ -573,11 +278,12 @@
     </div>
 
 <script type="module">
-    // 1. 引入必要的 Firebase 函数
+    // 引入 Firebase SDK (增加了 Auth 模块)
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getFirestore, collection, getDocs, setDoc, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-    // 2. 你的 Firebase 配置信息
+    // 你的 Firebase 配置
     const firebaseConfig = {
         apiKey: "AIzaSyDwO7Jc8qiyGU-WCWj0-eUGFqQZK6-085M",
         authDomain: "mypapertracker-25674.firebaseapp.com",
@@ -587,16 +293,17 @@
         appId: "1:438953417934:web:001355491d955a6f59449f"
     };
 
-    // 3. 初始化 Firebase
+    // 初始化
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
+    const auth = getAuth(app); // 初始化认证
     const COLLECTION_NAME = "submissions";
 
-    // --- 全局变量 ---
+    // 全局变量
     let localSubmissions = [];
     let nextSubmissionNumber = 1;
 
-    // --- 挂载全局函数 ---
+    // 挂载函数
     window.openModal = openModal;
     window.closeModal = closeModal;
     window.addProgressEntry = addProgressEntry;
@@ -605,23 +312,75 @@
     window.deleteSubmission = deleteSubmission;
     window.exportData = exportData;
     window.searchSubmissions = searchSubmissions;
+    window.logout = logout; // 挂载退出函数
 
-    // --- DOM 元素引用 ---
+    // 引用 DOM
+    const loginOverlay = document.getElementById('loginOverlay');
+    const mainContainer = document.getElementById('mainContainer');
+    const loginForm = document.getElementById('loginForm');
+    const loginError = document.getElementById('loginError');
+
+    // --- 认证逻辑 ---
+
+    // 1. 监听登录状态变化
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            // 已登录
+            console.log("用户已登录:", user.email);
+            loginOverlay.style.display = 'none';
+            mainContainer.style.display = 'block';
+            loadDataFromCloud(); // 只有登录后才加载数据
+        } else {
+            // 未登录
+            console.log("用户未登录");
+            loginOverlay.style.display = 'flex';
+            mainContainer.style.display = 'none';
+        }
+    });
+
+    // 2. 登录表单提交
+    loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('emailInput').value;
+        const password = document.getElementById('passwordInput').value;
+        const btn = document.getElementById('loginBtn');
+        
+        btn.textContent = '登录中...';
+        btn.disabled = true;
+        loginError.style.display = 'none';
+
+        try {
+            await signInWithEmailAndPassword(auth, email, password);
+            // 登录成功后，onAuthStateChanged 会自动处理界面切换
+        } catch (error) {
+            console.error(error);
+            loginError.textContent = "登录失败: 账号或密码错误";
+            loginError.style.display = 'block';
+            btn.textContent = '登录系统';
+            btn.disabled = false;
+        }
+    });
+
+    // 3. 退出登录
+    function logout() {
+        if(confirm("确定要退出登录吗？")) {
+            signOut(auth);
+            // 退出后，onAuthStateChanged 会自动切换回登录页
+        }
+    }
+
+    // --- 数据逻辑 (保持不变) ---
     const form = document.getElementById('submissionForm');
     const newProgressStatus = document.getElementById('newProgressStatus');
     const customStatusInput = document.getElementById('customStatusInput');
     
-    // 初始化 Flatpickr
     if (typeof flatpickr !== 'undefined') {
         flatpickr("#newProgressDate", { dateFormat: "Y.m.d", locale: "zh", defaultDate: new Date() });
     }
 
-    // --- 核心逻辑 ---
-
-    // A. 加载数据 (修正版：增加了投稿时间计算)
     async function loadDataFromCloud() {
         const tbody = document.getElementById('submissionsBody');
-        tbody.innerHTML = '<tr><td colspan="10">☁️ 正在从云端加载数据...</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="10">☁️ 正在加密加载数据...</td></tr>';
         localSubmissions = [];
         let maxNumber = 0;
 
@@ -631,15 +390,11 @@
             querySnapshot.forEach((doc) => {
                 const data = doc.data();
                 data.id = doc.id; 
-                
                 if (data.number > maxNumber) maxNumber = data.number;
                 
-                // 1. 计算最新状态
                 const latestProgress = getLatestProgress(data.progress);
                 data.lastUpdatedDate = latestProgress.date;
                 data.currentStatus = latestProgress.status;
-
-                // 2. 【关键修复】计算投稿时间 (如果数据库没存，就从进度里找)
                 if (!data.submissionDate || data.submissionDate === 'N/A') {
                     data.submissionDate = getSubmissionDate(data.progress);
                 }
@@ -647,7 +402,6 @@
                 localSubmissions.push(data);
             });
 
-            // 按更新时间排序
             localSubmissions.sort((a, b) => {
                 const dateA = a.lastUpdatedDate ? parseDateString(formatDateToYM_D(a.lastUpdatedDate)) : new Date(0);
                 const dateB = b.lastUpdatedDate ? parseDateString(formatDateToYM_D(b.lastUpdatedDate)) : new Date(0);
@@ -659,11 +413,11 @@
 
         } catch (error) {
             console.error("加载失败:", error);
-            tbody.innerHTML = `<tr><td colspan="10" style="color:red">加载失败: ${error.message}</td></tr>`;
+            // 如果是因为权限问题（未登录），这里也会捕获到
+            tbody.innerHTML = `<tr><td colspan="10" style="color:red">加载失败: ${error.message} (可能未获得授权)</td></tr>`;
         }
     }
 
-    // B. 渲染表格
     function renderTable(data) {
         const tbody = document.getElementById('submissionsBody');
         tbody.innerHTML = '';
@@ -681,7 +435,8 @@
                 <td>${item.journal || '-'}</td>
                 <td>${item.impactFactor || '-'}</td>
                 <td>${item.casLevel || '-'}</td>
-                <td>${item.submissionDate || '-'}</td> <td><span class="status-badge ${getStatusClass(item.currentStatus)}">${item.currentStatus}</span></td>
+                <td>${item.submissionDate || '-'}</td>
+                <td><span class="status-badge ${getStatusClass(item.currentStatus)}">${item.currentStatus}</span></td>
                 <td>${displayDate}</td>
                 <td>
                     <button class="btn btn-warning" onclick="editSubmission('${item.id}')" style="padding: 5px 10px;">编辑</button>
@@ -692,22 +447,16 @@
         searchSubmissions();
     }
 
-    // C. 保存数据
     form.addEventListener('submit', async function(e) {
         e.preventDefault();
         
         const submissionNum = parseInt(document.getElementById('submissionNumber').value);
         const shortTitle = document.getElementById('shortTitle').value.trim();
-        
-        // 获取所有进度
         const progressList = Array.from(document.getElementById('progressTimeline').children).map(item => ({
             date: item.querySelector('.timeline-date').textContent,
             status: item.querySelector('.timeline-status').textContent,
             note: item.querySelector('.timeline-note').textContent
         }));
-
-        // 计算投稿时间
-        const calculatedSubmissionDate = getSubmissionDate(progressList);
 
         const formData = {
             number: submissionNum,
@@ -723,7 +472,7 @@
             reviewerCount: parseInt(document.getElementById('reviewerCount').value) || 0,
             reviewerStatus: document.getElementById('reviewerStatus').value.trim(),
             notes: document.getElementById('notes').value.trim(),
-            submissionDate: calculatedSubmissionDate, // 保存计算后的时间
+            submissionDate: getSubmissionDate(progressList),
             progress: progressList
         };
 
@@ -742,7 +491,6 @@
         }
     });
 
-    // D. 编辑逻辑
     async function editSubmission(docId) {
         const submission = localSubmissions.find(s => s.id === docId);
         if (submission) {
@@ -766,7 +514,6 @@
         }
     }
 
-    // E. 删除逻辑
     async function deleteSubmission(docId) {
         if (confirm("确定要从云端彻底删除这条记录吗？")) {
             try {
@@ -779,159 +526,28 @@
         }
     }
 
-    // --- 辅助函数 ---
-    
-    // 【新增】计算投稿时间函数
+    // 辅助函数保持不变
     function getSubmissionDate(progressArray) {
         if (!progressArray || progressArray.length === 0) return 'N/A';
-        // 查找状态为 Submitted 的记录
         const submissionEntry = progressArray.find(entry => entry.status === 'Submitted');
-        // 如果找到了返回日期，没找到返回 N/A
         return submissionEntry ? submissionEntry.date : 'N/A';
     }
-
-    function parseDateString(dateString) {
-        if (!dateString) return null;
-        const parts = dateString.split(/[.-]/).map(Number);
-        return new Date(parts[0], parts[1] - 1, parts[2]);
-    }
-    
-    function formatDateToYM_D(date) {
-         if (!date) return 'N/A';
-         if (typeof date.getMonth !== 'function') return 'N/A';
-         return `${date.getFullYear()}.${date.getMonth() + 1}.${date.getDate()}`;
-    }
-
-    function getLatestProgress(progressArray) {
-         if (!progressArray || progressArray.length === 0) return { date: null, status: 'N/A' };
-         // 简单获取最后一条记录
-         return { 
-             date: parseDateString(progressArray[progressArray.length-1].date), 
-             status: progressArray[progressArray.length-1].status 
-         };
-    }
-
+    function parseDateString(dateString) { if (!dateString) return null; const parts = dateString.split(/[.-]/).map(Number); return new Date(parts[0], parts[1] - 1, parts[2]); }
+    function formatDateToYM_D(date) { if (!date) return 'N/A'; if (typeof date.getMonth !== 'function') return 'N/A'; return `${date.getFullYear()}.${date.getMonth() + 1}.${date.getDate()}`; }
+    function getLatestProgress(progressArray) { if (!progressArray || progressArray.length === 0) return { date: null, status: 'N/A' }; return { date: parseDateString(progressArray[progressArray.length-1].date), status: progressArray[progressArray.length-1].status }; }
     function truncateText(text, len) { return text && text.length > len ? text.substring(0, len) + '...' : text || '-'; }
-    
-    function getStatusClass(status) {
-         const statusMap = {
-                'Submitted': 'status-Submitted',
-                'Under Review': 'status-Under-Review',
-                'Accept': 'status-Accepted',
-                'Reject': 'status-Rejected',
-                'Reject & Submit': 'status-Reject-\&-Submit',
-                'Awaiting AE Recommendation': 'status-Awaiting-AE-Recommendation',
-                'Awaiting EIC Decision': 'status-Awaiting-EIC-Decision',
-                'Decision in Process': 'status-Decision-in-Process',
-                'RRC': 'status-RRC'
-            };
-            if (status && (status.toLowerCase().includes('editor') || status.toLowerCase().includes('complete'))) {
-                return 'status-Decision-in-Process';
-            }
-            return statusMap[status] || 'status-Custom';
-    }
-
-    function openModal() {
-        form.reset();
-        document.getElementById('editingFileName').value = '';
-        document.getElementById('submissionNumber').value = nextSubmissionNumber;
-        document.getElementById('modalTitle').textContent = '新建投稿';
-        document.getElementById('progressTimeline').innerHTML = '';
-        customStatusInput.style.display = 'none';
-        document.getElementById('submissionModal').style.display = 'block';
-    }
-    
+    function getStatusClass(status) { const statusMap = { 'Submitted': 'status-Submitted', 'Under Review': 'status-Under-Review', 'Accept': 'status-Accepted', 'Reject': 'status-Rejected', 'Reject & Submit': 'status-Reject-\&-Submit', 'Awaiting AE Recommendation': 'status-Awaiting-AE-Recommendation', 'Awaiting EIC Decision': 'status-Awaiting-EIC-Decision', 'Decision in Process': 'status-Decision-in-Process', 'RRC': 'status-RRC' }; if (status && (status.toLowerCase().includes('editor') || status.toLowerCase().includes('complete'))) { return 'status-Decision-in-Process'; } return statusMap[status] || 'status-Custom'; }
+    function openModal() { form.reset(); document.getElementById('editingFileName').value = ''; document.getElementById('submissionNumber').value = nextSubmissionNumber; document.getElementById('modalTitle').textContent = '新建投稿'; document.getElementById('progressTimeline').innerHTML = ''; customStatusInput.style.display = 'none'; document.getElementById('submissionModal').style.display = 'block'; }
     function closeModal() { document.getElementById('submissionModal').style.display = 'none'; }
-    
-    function addProgressEntry() {
-         const dateInput = document.getElementById('newProgressDate');
-            const statusSelect = document.getElementById('newProgressStatus');
-            const noteInput = document.getElementById('newProgressNote');
-            const customStatus = document.getElementById('customStatusInput');
-
-            let date = dateInput.value;
-            let status = statusSelect.value;
-            let note = noteInput.value.trim();
-
-            if (status === 'Custom') status = customStatus.value.trim();
-
-            if (!date || !status) { alert('日期和状态都不能为空！'); return; }
-
-            const timeline = document.getElementById('progressTimeline');
-            const item = document.createElement('div');
-            item.className = 'timeline-item';
-            item.innerHTML = `
-                <span class="timeline-date">${date}</span>
-                <span class="timeline-status ${getStatusClass(status)}">${status}</span>
-                <span class="timeline-note">${note}</span>
-                <button type="button" onclick="removeProgressEntry(this)" style="margin-left: auto; background: #dc3545; color: white; border: none; border-radius: 3px; padding: 2px 6px; cursor: pointer;">删除</button>
-            `;
-            timeline.appendChild(item);
-    }
-    
+    function addProgressEntry() { const dateInput = document.getElementById('newProgressDate'); const statusSelect = document.getElementById('newProgressStatus'); const noteInput = document.getElementById('newProgressNote'); const customStatus = document.getElementById('customStatusInput'); let date = dateInput.value; let status = statusSelect.value; let note = noteInput.value.trim(); if (status === 'Custom') status = customStatus.value.trim(); if (!date || !status) { alert('日期和状态都不能为空！'); return; } const timeline = document.getElementById('progressTimeline'); const item = document.createElement('div'); item.className = 'timeline-item'; item.innerHTML = ` <span class="timeline-date">${date}</span> <span class="timeline-status ${getStatusClass(status)}">${status}</span> <span class="timeline-note">${note}</span> <button type="button" onclick="removeProgressEntry(this)" style="margin-left: auto; background: #dc3545; color: white; border: none; border-radius: 3px; padding: 2px 6px; cursor: pointer;">删除</button> `; timeline.appendChild(item); }
     function removeProgressEntry(btn) { btn.parentElement.remove(); }
-    
-    function renderProgressTimeline(progress) {
-         const timeline = document.getElementById('progressTimeline');
-            timeline.innerHTML = '';
-            progress.forEach((entry, index) => {
-                const item = document.createElement('div');
-                item.className = 'timeline-item';
-                item.innerHTML = `
-                    <span class="timeline-date">${entry.date}</span>
-                    <span class="timeline-status ${getStatusClass(entry.status)}">${entry.status}</span>
-                    <span class="timeline-note">${entry.note || ''}</span>
-                    <button type="button" onclick="removeProgressEntry(this)" style="margin-left: auto; background: #dc3545; color: white; border: none; border-radius: 3px; padding: 2px 6px; cursor: pointer;">删除</button>
-                `;
-                timeline.appendChild(item);
-            });
-    }
-
-    // 搜索逻辑
-    function searchSubmissions() {
-        const input = document.getElementById('searchInput');
-        if (!input) return;
-        const searchTerm = input.value.trim().toLowerCase();
-        const rows = document.getElementById('submissionsBody').getElementsByTagName('tr');
-        for (let row of rows) {
-            if (row.children.length <= 1) continue;
-            
-            const textNumber = row.cells[0]?.textContent.toLowerCase() || "";
-            const textShortTitle = row.cells[1]?.textContent.toLowerCase() || "";
-            const textPaperTitle = row.cells[2]?.textContent.toLowerCase() || "";
-            const textJournal = row.cells[3]?.textContent.toLowerCase() || "";
-            
-            if (textNumber.includes(searchTerm) || textShortTitle.includes(searchTerm) || 
-                textPaperTitle.includes(searchTerm) || textJournal.includes(searchTerm)) {
-                row.style.display = '';
-            } else {
-                row.style.display = 'none';
-            }
-        }
-    }
-
-    function exportData() {
-        alert("此功能可直接使用，逻辑与之前相同，只需修改数据源。");
-    }
-
-    // 页面加载后的调整
-    window.addEventListener('load', function() {
-        const dataInfo = document.getElementById('dataInfo');
-        if(dataInfo) dataInfo.style.display = 'none'; 
-        
-        const warning = document.getElementById('compatibilityWarning');
-        if(warning) warning.style.display = 'none';
-        
-        document.getElementById('mainContent').style.display = 'block'; 
-        
-        loadDataFromCloud(); 
-    });
+    function renderProgressTimeline(progress) { const timeline = document.getElementById('progressTimeline'); timeline.innerHTML = ''; progress.forEach((entry, index) => { const item = document.createElement('div'); item.className = 'timeline-item'; item.innerHTML = ` <span class="timeline-date">${entry.date}</span> <span class="timeline-status ${getStatusClass(entry.status)}">${entry.status}</span> <span class="timeline-note">${entry.note || ''}</span> <button type="button" onclick="removeProgressEntry(this)" style="margin-left: auto; background: #dc3545; color: white; border: none; border-radius: 3px; padding: 2px 6px; cursor: pointer;">删除</button> `; timeline.appendChild(item); }); }
+    function searchSubmissions() { const input = document.getElementById('searchInput'); if (!input) return; const searchTerm = input.value.trim().toLowerCase(); const rows = document.getElementById('submissionsBody').getElementsByTagName('tr'); for (let row of rows) { if (row.children.length <= 1) continue; const textNumber = row.cells[0]?.textContent.toLowerCase() || ""; const textShortTitle = row.cells[1]?.textContent.toLowerCase() || ""; const textPaperTitle = row.cells[2]?.textContent.toLowerCase() || ""; const textJournal = row.cells[3]?.textContent.toLowerCase() || ""; if (textNumber.includes(searchTerm) || textShortTitle.includes(searchTerm) || textPaperTitle.includes(searchTerm) || textJournal.includes(searchTerm)) { row.style.display = ''; } else { row.style.display = 'none'; } } }
+    function exportData() { alert("此功能可直接使用，逻辑与之前相同，只需修改数据源。"); }
 
 </script>
-
 
     <script src="https://cdn.jsdelivr.net/npm/flatpickr" async></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/zh.js" async></script>
 </body>
-
 </html>
