@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>旧数据导入工具 (文件多选版)</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }
+        .box { border: 2px dashed #007bff; padding: 40px; text-align: center; border-radius: 10px; margin-bottom: 20px; background-color: #f8f9fa; }
+        #log { background: #333; color: #fff; padding: 15px; border-radius: 5px; height: 300px; overflow-y: auto; font-family: monospace; font-size: 13px; }
+        .success { color: #4caf50; }
+        .error { color: #ff5252; }
+        .warn { color: #ffc107; }
+        h1 { color: #333; }
+        .highlight { font-weight: bold; color: #007bff; }
+    </style>
+</head>
+<body>
+    <h1>📂 旧数据导入 (万能版)</h1>
+    <p>该版本允许你直接选中所有文件，解决找不到文件的问题。</p>
+    
+    <div class="box">
+        <h3>👇 点这里</h3>
+        <input type="file" id="fileInput" multiple accept=".json,application/json">
+        <p style="margin-top: 10px; color: #666; font-size: 14px;">
+            (弹出窗口后，请按 <strong>Ctrl + A</strong> 全选那 11 个文件，然后点“打开”)
+        </p>
+    </div>
+
+    <div id="status" class="highlight">等待选择文件...</div>
+    <div id="log"></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, setDoc, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // ⚠️⚠️⚠️ 请再次填入你的配置 ⚠️⚠️⚠️
+        const firebaseConfig = {
+        apiKey: "AIzaSyDwO7Jc8qiyGU-WCWj0-eUGFqQZK6-085M",
+        authDomain: "mypapertracker-25674.firebaseapp.com",
+        projectId: "mypapertracker-25674",
+        storageBucket: "mypapertracker-25674.firebasestorage.app",
+        messagingSenderId: "438953417934",
+        appId: "1:438953417934:web:001355491d955a6f59449f"
+    };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const COLLECTION_NAME = "submissions";
+
+        const fileInput = document.getElementById('fileInput');
+        const logDiv = document.getElementById('log');
+        const statusDiv = document.getElementById('status');
+
+        function log(msg, type = 'info') {
+            const p = document.createElement('div');
+            p.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            if (type === 'success') p.className = 'success';
+            if (type === 'error') p.className = 'error';
+            if (type === 'warn') p.className = 'warn';
+            logDiv.prepend(p);
+        }
+
+        fileInput.addEventListener('change', async (e) => {
+            // 1. 获取所有选中的文件
+            const rawFiles = Array.from(e.target.files);
+            log(`系统检测到你选中了 ${rawFiles.length} 个文件`, 'info');
+
+            // 2. 过滤：忽略大小写 (解决 .JSON 问题)
+            const jsonFiles = rawFiles.filter(f => f.name.toLowerCase().endsWith('.json'));
+
+            if (jsonFiles.length === 0) {
+                log(`❌ 未找到 JSON 文件！你选中的可能是其他格式，或者文件名后缀不是 .json`, 'error');
+                if (rawFiles.length > 0) {
+                    log(`⚠️ 你选中的第一个文件是: ${rawFiles[0].name}`, 'warn');
+                }
+                return;
+            }
+
+            if (!confirm(`准备上传 ${jsonFiles.length} 个文件，确定吗？`)) return;
+
+            statusDiv.textContent = `🚀 正在上传... (0/${jsonFiles.length})`;
+            let successCount = 0;
+            let failCount = 0;
+
+            for (let i = 0; i < jsonFiles.length; i++) {
+                const file = jsonFiles[i];
+                try {
+                    // 读取
+                    const content = await readFileAsText(file);
+                    const data = JSON.parse(content);
+                    
+                    // ID 生成逻辑：去掉后缀
+                    // "1-TestPaper.json" -> "1-TestPaper"
+                    const docId = file.name.replace(/\.[^/.]+$/, "");
+
+                    // 上传
+                    await setDoc(doc(db, COLLECTION_NAME, docId), data, { merge: true });
+
+                    log(`✅ [${i+1}/${jsonFiles.length}] 成功: ${file.name}`, 'success');
+                    successCount++;
+                } catch (err) {
+                    console.error(err);
+                    log(`❌ [${i+1}/${jsonFiles.length}] 失败: ${file.name} - ${err.message}`, 'error');
+                    failCount++;
+                }
+                statusDiv.textContent = `🚀 正在上传... (${i + 1}/${jsonFiles.length})`;
+            }
+
+            statusDiv.textContent = `🎉 全部完成！成功: ${successCount}, 失败: ${failCount}`;
+            alert(`导入结束！\n成功导入: ${successCount} 个文件。\n\n现在请去主页面刷新查看数据。`);
+        });
+
+        function readFileAsText(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result);
+                reader.onerror = (e) => reject(e);
+                reader.readAsText(file);
+            });
+        }
+    </script>
+</body>
+</html>

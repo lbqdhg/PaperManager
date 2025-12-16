@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>云端数据批量导出</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <style>
+        body { font-family: 'Microsoft YaHei', sans-serif; padding: 20px; max-width: 600px; margin: 0 auto; background-color: #f4f6f9; }
+        .box { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center; }
+        h1 { color: #333; margin-bottom: 20px; }
+        button { padding: 12px 25px; font-size: 16px; cursor: pointer; border: none; border-radius: 5px; transition: 0.3s; margin: 10px; }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-primary:hover { background: #0056b3; }
+        .btn-primary:disabled { background: #ccc; cursor: not-allowed; }
+        
+        #log { margin-top: 20px; text-align: left; background: #2d2d2d; color: #eee; padding: 15px; border-radius: 5px; height: 200px; overflow-y: auto; font-family: monospace; font-size: 12px; display: none; }
+        .success { color: #4caf50; }
+        .info { color: #64b5f6; }
+        .error { color: #ff5252; }
+
+        /* 登录层 */
+        #loginSection { display: block; }
+        #exportSection { display: none; }
+        input { padding: 10px; width: 80%; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 4px; }
+    </style>
+</head>
+<body>
+
+    <div class="box">
+        <h1>☁️ 云端数据导出备份</h1>
+        
+        <div id="loginSection">
+            <p>为了安全，导出数据前请先验证身份。</p>
+            <input type="email" id="email" placeholder="管理员邮箱">
+            <input type="password" id="password" placeholder="密码">
+            <br>
+            <button class="btn-primary" id="loginBtn">🔐 登录并准备</button>
+        </div>
+
+        <div id="exportSection">
+            <p id="welcomeMsg">欢迎回来！</p>
+            <p style="color: #666; font-size: 14px;">点击下方按钮，系统将把云端所有记录打包为 ZIP 下载。</p>
+            <button class="btn-primary" id="exportBtn">📦 开始打包下载 (.zip)</button>
+        </div>
+
+        <div id="log"></div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+        // ⚠️⚠️⚠️ 请替换为你的 Firebase 配置 ⚠️⚠️⚠️
+        const firebaseConfig = {
+        apiKey: "AIzaSyDwO7Jc8qiyGU-WCWj0-eUGFqQZK6-O85M",
+        authDomain: "mypapertracker-25674.firebaseapp.com",
+        projectId: "mypapertracker-25674",
+        storageBucket: "mypapertracker-25674.firebasestorage.app",
+        messagingSenderId: "438953417934",
+        appId: "1:438953417934:web:001355491d955a6f59449f"
+        };
+
+        // 初始化
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        const COLLECTION_NAME = "submissions";
+
+        // DOM 元素
+        const loginSection = document.getElementById('loginSection');
+        const exportSection = document.getElementById('exportSection');
+        const loginBtn = document.getElementById('loginBtn');
+        const exportBtn = document.getElementById('exportBtn');
+        const logDiv = document.getElementById('log');
+
+        function log(msg, type = 'info') {
+            logDiv.style.display = 'block';
+            const p = document.createElement('div');
+            p.textContent = `> ${msg}`;
+            if (type === 'success') p.className = 'success';
+            if (type === 'error') p.className = 'error';
+            if (type === 'info') p.className = 'info';
+            logDiv.prepend(p);
+        }
+
+        // --- 1. 登录逻辑 ---
+        loginBtn.addEventListener('click', async () => {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            if (!email || !password) { alert("请输入账号密码"); return; }
+
+            loginBtn.textContent = "验证中...";
+            loginBtn.disabled = true;
+
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+                log("登录成功！", "success");
+                loginSection.style.display = 'none';
+                exportSection.style.display = 'block';
+                document.getElementById('welcomeMsg').textContent = `管理员: ${email}`;
+            } catch (error) {
+                console.error(error);
+                log(`登录失败: ${error.message}`, "error");
+                loginBtn.textContent = "🔐 登录并准备";
+                loginBtn.disabled = false;
+                alert("登录失败，请检查控制台或账号密码。");
+            }
+        });
+
+        // --- 2. 导出逻辑 ---
+        exportBtn.addEventListener('click', async () => {
+            exportBtn.disabled = true;
+            exportBtn.textContent = "⏳ 正在从云端拉取...";
+            
+            try {
+                // 初始化 ZIP 对象
+                const zip = new JSZip();
+                let count = 0;
+
+                // 从 Firestore 获取所有数据
+                const querySnapshot = await getDocs(collection(db, COLLECTION_NAME));
+                
+                if (querySnapshot.empty) {
+                    alert("云端数据库是空的！");
+                    exportBtn.disabled = false;
+                    exportBtn.textContent = "📦 开始打包下载 (.zip)";
+                    return;
+                }
+
+                log(`找到 ${querySnapshot.size} 条记录，开始处理...`, "info");
+
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    
+                    // 还原文件名逻辑：编号-短标题.json
+                    // 需要处理短标题里可能包含的非法字符（虽然一般只有英文）
+                    const safeTitle = (data.shortTitle || "Untitled").replace(/[\s\\/:"*?<>|]+/g, '_');
+                    const filename = `${data.number}-${safeTitle}.json`;
+
+                    // 将数据转为格式化的 JSON 字符串
+                    const jsonContent = JSON.stringify(data, null, 2);
+
+                    // 添加到 ZIP
+                    zip.file(filename, jsonContent);
+                    count++;
+                    log(`已添加: ${filename}`, "info");
+                });
+
+                log(`所有文件处理完毕，正在压缩...`, "info");
+                exportBtn.textContent = "📦 正在压缩...";
+
+                // 生成并下载
+                const content = await zip.generateAsync({ type: "blob" });
+                const dateStr = new Date().toISOString().slice(0,10);
+                saveAs(content, `PaperBackup_${dateStr}.zip`);
+
+                log(`✅ 下载已触发！包含 ${count} 个文件。`, "success");
+                exportBtn.textContent = "✅ 导出成功";
+                setTimeout(() => {
+                    exportBtn.disabled = false;
+                    exportBtn.textContent = "📦 再次打包";
+                }, 3000);
+
+            } catch (error) {
+                console.error("导出失败:", error);
+                log(`❌ 导出出错: ${error.message}`, "error");
+                exportBtn.disabled = false;
+                exportBtn.textContent = "❌ 重试";
+            }
+        });
+    </script>
+</body>
+</html>
