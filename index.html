@@ -1,0 +1,337 @@
+<script type="module">
+    // 1. 引入必要的 Firebase 函数 (使用完整的网址链接)
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, collection, getDocs, setDoc, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    // 2. 你的 Firebase 配置信息 (已根据截图填好)
+    const firebaseConfig = {
+        apiKey: "AIzaSyDwO7Jc8qiyGU-WCWj0-eUGFqQZK6-085M",
+        authDomain: "mypapertracker-25674.firebaseapp.com",
+        projectId: "mypapertracker-25674",
+        storageBucket: "mypapertracker-25674.firebasestorage.app",
+        messagingSenderId: "438953417934",
+        appId: "1:438953417934:web:001355491d955a6f59449f"
+    };
+
+    // 3. 初始化 Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const COLLECTION_NAME = "submissions"; // 数据库里的集合名称
+
+    // --- 全局变量 ---
+    let localSubmissions = [];
+    let nextSubmissionNumber = 1;
+
+    // --- 辅助函数：将模块内的函数挂载到 window 对象 ---
+    window.openModal = openModal;
+    window.closeModal = closeModal;
+    window.addProgressEntry = addProgressEntry;
+    window.removeProgressEntry = removeProgressEntry;
+    window.editSubmission = editSubmission;
+    window.deleteSubmission = deleteSubmission;
+    window.exportData = exportData;
+    window.searchSubmissions = searchSubmissions;
+
+    // --- DOM 元素引用 ---
+    const form = document.getElementById('submissionForm');
+    const newProgressStatus = document.getElementById('newProgressStatus');
+    const customStatusInput = document.getElementById('customStatusInput');
+    
+    // 初始化 Flatpickr
+    if (typeof flatpickr !== 'undefined') {
+        flatpickr("#newProgressDate", { dateFormat: "Y.m.d", locale: "zh", defaultDate: new Date() });
+    }
+
+    // --- 核心逻辑 ---
+
+    // A. 加载数据
+    async function loadDataFromCloud() {
+        const tbody = document.getElementById('submissionsBody');
+        tbody.innerHTML = '<tr><td colspan="10">☁️ 正在从云端加载数据...</td></tr>';
+        localSubmissions = [];
+        let maxNumber = 0;
+
+        try {
+            const querySnapshot = await getDocs(collection(db, COLLECTION_NAME));
+            
+            querySnapshot.forEach((doc) => {
+                const data = doc.data();
+                data.id = doc.id; 
+                
+                if (data.number > maxNumber) maxNumber = data.number;
+                
+                const latestProgress = getLatestProgress(data.progress);
+                data.lastUpdatedDate = latestProgress.date;
+                data.currentStatus = latestProgress.status;
+                
+                localSubmissions.push(data);
+            });
+
+            localSubmissions.sort((a, b) => {
+                const dateA = a.lastUpdatedDate ? parseDateString(formatDateToYM_D(a.lastUpdatedDate)) : new Date(0);
+                const dateB = b.lastUpdatedDate ? parseDateString(formatDateToYM_D(b.lastUpdatedDate)) : new Date(0);
+                return dateB - dateA;
+            });
+
+            nextSubmissionNumber = maxNumber + 1;
+            renderTable(localSubmissions);
+
+        } catch (error) {
+            console.error("加载失败:", error);
+            tbody.innerHTML = `<tr><td colspan="10" style="color:red">加载失败: ${error.message}<br>请检查 Firebase 控制台的 Rules 是否设为 Test Mode</td></tr>`;
+        }
+    }
+
+    // B. 渲染表格
+    function renderTable(data) {
+        const tbody = document.getElementById('submissionsBody');
+        tbody.innerHTML = '';
+        if (data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="10">暂无数据，点击"新建投稿"添加。</td></tr>';
+            return;
+        }
+        data.forEach(item => {
+            const displayDate = item.lastUpdatedDate ? formatDateToYM_D(item.lastUpdatedDate) : '-';
+            const row = tbody.insertRow();
+            row.innerHTML = `
+                <td>${item.number}</td>
+                <td title="${item.shortTitle}">${truncateText(item.shortTitle, 15)}</td>
+                <td title="${item.paperTitle}">${truncateText(item.paperTitle, 25)}</td>
+                <td>${item.journal || '-'}</td>
+                <td>${item.impactFactor || '-'}</td>
+                <td>${item.casLevel || '-'}</td>
+                <td>${item.submissionDate || '-'}</td>
+                <td><span class="status-badge ${getStatusClass(item.currentStatus)}">${item.currentStatus}</span></td>
+                <td>${displayDate}</td>
+                <td>
+                    <button class="btn btn-warning" onclick="editSubmission('${item.id}')" style="padding: 5px 10px;">编辑</button>
+                    <button class="btn btn-danger" onclick="deleteSubmission('${item.id}')" style="padding: 5px 10px;">删除</button>
+                </td>
+            `;
+        });
+        searchSubmissions();
+    }
+
+    // C. 保存数据
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const submissionNum = parseInt(document.getElementById('submissionNumber').value);
+        const shortTitle = document.getElementById('shortTitle').value.trim();
+        
+        const formData = {
+            number: submissionNum,
+            shortTitle: shortTitle,
+            paperTitle: document.getElementById('paperTitle').value.trim(),
+            authors: document.getElementById('authors').value.trim(),
+            journal: document.getElementById('journal').value.trim(),
+            impactFactor: document.getElementById('impactFactor').value,
+            journalLevel: document.getElementById('journalLevel').value,
+            casLevel: document.getElementById('casLevel').value,
+            journalWebsite: document.getElementById('journalWebsite').value.trim(),
+            submissionWebsite: document.getElementById('submissionWebsite').value.trim(),
+            reviewerCount: parseInt(document.getElementById('reviewerCount').value) || 0,
+            reviewerStatus: document.getElementById('reviewerStatus').value.trim(),
+            notes: document.getElementById('notes').value.trim(),
+            submissionDate: document.getElementById('progressTimeline').querySelector('.timeline-status.status-Submitted') 
+                            ? document.getElementById('progressTimeline').querySelector('.timeline-status.status-Submitted').previousElementSibling.textContent 
+                            : 'N/A',
+            progress: Array.from(document.getElementById('progressTimeline').children).map(item => ({
+                date: item.querySelector('.timeline-date').textContent,
+                status: item.querySelector('.timeline-status').textContent,
+                note: item.querySelector('.timeline-note').textContent
+            }))
+        };
+
+        let docId = document.getElementById('editingFileName').value; 
+        if (!docId) {
+            docId = `${submissionNum}-${shortTitle.replace(/[\s\\/:"*?<>|]+/g, '_')}`;
+        }
+
+        try {
+            await setDoc(doc(db, COLLECTION_NAME, docId), formData);
+            alert("✅ 保存到云端成功！");
+            closeModal();
+            loadDataFromCloud();
+        } catch (error) {
+            alert(`保存失败: ${error.message}`);
+        }
+    });
+
+    // D. 编辑逻辑
+    async function editSubmission(docId) {
+        const submission = localSubmissions.find(s => s.id === docId);
+        if (submission) {
+            openModal();
+            document.getElementById('modalTitle').textContent = `编辑: ${submission.shortTitle}`;
+            document.getElementById('editingFileName').value = docId;
+            document.getElementById('submissionNumber').value = submission.number;
+            document.getElementById('shortTitle').value = submission.shortTitle;
+            document.getElementById('paperTitle').value = submission.paperTitle;
+            document.getElementById('authors').value = submission.authors;
+            document.getElementById('journal').value = submission.journal;
+            document.getElementById('impactFactor').value = submission.impactFactor;
+            document.getElementById('journalLevel').value = submission.journalLevel;
+            document.getElementById('casLevel').value = submission.casLevel;
+            document.getElementById('journalWebsite').value = submission.journalWebsite || '';
+            document.getElementById('submissionWebsite').value = submission.submissionWebsite || '';
+            document.getElementById('reviewerCount').value = submission.reviewerCount;
+            document.getElementById('reviewerStatus').value = submission.reviewerStatus;
+            document.getElementById('notes').value = submission.notes;
+            renderProgressTimeline(submission.progress || []);
+        }
+    }
+
+    // E. 删除逻辑
+    async function deleteSubmission(docId) {
+        if (confirm("确定要从云端彻底删除这条记录吗？")) {
+            try {
+                await deleteDoc(doc(db, COLLECTION_NAME, docId));
+                alert("已删除");
+                loadDataFromCloud();
+            } catch (error) {
+                alert(`删除失败: ${error.message}`);
+            }
+        }
+    }
+
+    // --- 通用辅助函数 ---
+    function parseDateString(dateString) {
+        if (!dateString) return null;
+        const parts = dateString.split(/[.-]/).map(Number);
+        return new Date(parts[0], parts[1] - 1, parts[2]);
+    }
+    
+    function formatDateToYM_D(date) {
+         if (!date) return 'N/A';
+         if (typeof date.getMonth !== 'function') return 'N/A';
+         return `${date.getFullYear()}.${date.getMonth() + 1}.${date.getDate()}`;
+    }
+
+    function getLatestProgress(progressArray) {
+         if (!progressArray || progressArray.length === 0) return { date: null, status: 'N/A' };
+         return { 
+             date: parseDateString(progressArray[progressArray.length-1].date), 
+             status: progressArray[progressArray.length-1].status 
+         };
+    }
+
+    function truncateText(text, len) { return text && text.length > len ? text.substring(0, len) + '...' : text || '-'; }
+    
+    function getStatusClass(status) {
+         const statusMap = {
+                'Submitted': 'status-Submitted',
+                'Under Review': 'status-Under-Review',
+                'Accept': 'status-Accepted',
+                'Reject': 'status-Rejected',
+                'Reject & Submit': 'status-Reject-\&-Submit',
+                'Awaiting AE Recommendation': 'status-Awaiting-AE-Recommendation',
+                'Awaiting EIC Decision': 'status-Awaiting-EIC-Decision',
+                'Decision in Process': 'status-Decision-in-Process',
+                'RRC': 'status-RRC'
+            };
+            if (status && (status.toLowerCase().includes('editor') || status.toLowerCase().includes('complete'))) {
+                return 'status-Decision-in-Process';
+            }
+            return statusMap[status] || 'status-Custom';
+    }
+
+    function openModal() {
+        form.reset();
+        document.getElementById('editingFileName').value = '';
+        document.getElementById('submissionNumber').value = nextSubmissionNumber;
+        document.getElementById('modalTitle').textContent = '新建投稿';
+        document.getElementById('progressTimeline').innerHTML = '';
+        customStatusInput.style.display = 'none';
+        document.getElementById('submissionModal').style.display = 'block';
+    }
+    
+    function closeModal() { document.getElementById('submissionModal').style.display = 'none'; }
+    
+    function addProgressEntry() {
+         const dateInput = document.getElementById('newProgressDate');
+            const statusSelect = document.getElementById('newProgressStatus');
+            const noteInput = document.getElementById('newProgressNote');
+            const customStatus = document.getElementById('customStatusInput');
+
+            let date = dateInput.value;
+            let status = statusSelect.value;
+            let note = noteInput.value.trim();
+
+            if (status === 'Custom') status = customStatus.value.trim();
+
+            if (!date || !status) { alert('日期和状态都不能为空！'); return; }
+
+            const timeline = document.getElementById('progressTimeline');
+            const item = document.createElement('div');
+            item.className = 'timeline-item';
+            item.innerHTML = `
+                <span class="timeline-date">${date}</span>
+                <span class="timeline-status ${getStatusClass(status)}">${status}</span>
+                <span class="timeline-note">${note}</span>
+                <button type="button" onclick="removeProgressEntry(this)" style="margin-left: auto; background: #dc3545; color: white; border: none; border-radius: 3px; padding: 2px 6px; cursor: pointer;">删除</button>
+            `;
+            timeline.appendChild(item);
+    }
+    
+    function removeProgressEntry(btn) { btn.parentElement.remove(); }
+    function renderProgressTimeline(progress) {
+         const timeline = document.getElementById('progressTimeline');
+            timeline.innerHTML = '';
+            progress.forEach((entry, index) => {
+                const item = document.createElement('div');
+                item.className = 'timeline-item';
+                item.innerHTML = `
+                    <span class="timeline-date">${entry.date}</span>
+                    <span class="timeline-status ${getStatusClass(entry.status)}">${entry.status}</span>
+                    <span class="timeline-note">${entry.note || ''}</span>
+                    <button type="button" onclick="removeProgressEntry(this)" style="margin-left: auto; background: #dc3545; color: white; border: none; border-radius: 3px; padding: 2px 6px; cursor: pointer;">删除</button>
+                `;
+                timeline.appendChild(item);
+            });
+    }
+
+    // 搜索逻辑 (仅限编号、标题、题目、期刊)
+    function searchSubmissions() {
+        const input = document.getElementById('searchInput');
+        if (!input) return; // 防御性检查
+        const searchTerm = input.value.trim().toLowerCase();
+        const rows = document.getElementById('submissionsBody').getElementsByTagName('tr');
+        for (let row of rows) {
+            if (row.children.length <= 1) continue;
+            
+            // 安全获取单元格内容
+            const textNumber = row.cells[0]?.textContent.toLowerCase() || "";
+            const textShortTitle = row.cells[1]?.textContent.toLowerCase() || "";
+            const textPaperTitle = row.cells[2]?.textContent.toLowerCase() || "";
+            const textJournal = row.cells[3]?.textContent.toLowerCase() || "";
+            
+            if (textNumber.includes(searchTerm) || textShortTitle.includes(searchTerm) || 
+                textPaperTitle.includes(searchTerm) || textJournal.includes(searchTerm)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        }
+    }
+
+    function exportData() {
+        alert("此功能可直接使用，逻辑与之前相同，只需修改数据源。");
+    }
+
+    // 页面加载后的调整
+    window.addEventListener('load', function() {
+        // 隐藏旧的“选择文件夹”提示
+        const dataInfo = document.getElementById('dataInfo');
+        if(dataInfo) dataInfo.style.display = 'none'; 
+        
+        const warning = document.getElementById('compatibilityWarning');
+        if(warning) warning.style.display = 'none';
+        
+        // 显示主内容
+        document.getElementById('mainContent').style.display = 'block'; 
+        
+        loadDataFromCloud(); 
+    });
+
+</script>
