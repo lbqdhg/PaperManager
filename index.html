@@ -6,6 +6,9 @@
     <title>论文投稿记录管理系统v2.0</title>
     <link rel="icon" href="hhxc.ico" type="image/x-icon">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/zh.js"></script>
     <style>
         /* --- 基础样式 --- */
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -373,6 +376,17 @@
     const form = document.getElementById('submissionForm');
     const newProgressStatus = document.getElementById('newProgressStatus');
     const customStatusInput = document.getElementById('customStatusInput');
+
+    // 监听下拉菜单变化，控制自定义输入框的显示与隐藏
+    newProgressStatus.addEventListener('change', function() {
+        if (this.value === 'Custom') {
+            customStatusInput.style.display = 'inline-block'; // 显示输入框
+            customStatusInput.focus(); // 自动聚焦
+        } else {
+            customStatusInput.style.display = 'none'; // 隐藏输入框
+            customStatusInput.value = ''; // 清空未使用的输入
+        }
+    });
     
     if (typeof flatpickr !== 'undefined') {
         flatpickr("#newProgressDate", { dateFormat: "Y.m.d", locale: "zh", defaultDate: new Date() });
@@ -547,7 +561,6 @@
 
 </script>
 
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr" async></script>
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/zh.js" async></script>
+
 </body>
 </html>
