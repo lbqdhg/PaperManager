@@ -237,6 +237,17 @@
                         <input type="url" id="submissionWebsite">
                     </div>
 
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="journalAccount">期刊账号密码</label>
+                            <input type="text" id="journalAccount" placeholder="例如：账号 / 密码">
+                        </div>
+                        <div class="form-group">
+                            <label for="manuscriptId">Manuscript ID</label>
+                            <input type="text" id="manuscriptId" placeholder="例如：JMLR-2023-1234">
+                        </div>
+                    </div>
+
                     <div class="form-group">
                         <label>投稿进度记录</label>
                         <div id="progressTimeline" class="progress-timeline"></div>
@@ -453,7 +464,7 @@
                 <td><span class="status-badge ${getStatusClass(item.currentStatus)}">${item.currentStatus}</span></td>
                 <td>${displayDate}</td>
                 <td>
-                    <button class="btn btn-warning" onclick="editSubmission('${item.id}')" style="padding: 5px 10px;">编辑</button>
+                    <button class="btn btn-warning" onclick="editSubmission('${item.id}')" style="padding: 5px 10px;">查看/编辑</button>
                     <button class="btn btn-danger" onclick="deleteSubmission('${item.id}')" style="padding: 5px 10px;">删除</button>
                 </td>
             `;
@@ -483,6 +494,8 @@
             casLevel: document.getElementById('casLevel').value,
             journalWebsite: document.getElementById('journalWebsite').value.trim(),
             submissionWebsite: document.getElementById('submissionWebsite').value.trim(),
+            journalAccount: document.getElementById('journalAccount').value.trim(), // 新增抓取字段
+            manuscriptId: document.getElementById('manuscriptId').value.trim(),     // 新增抓取字段
             reviewerCount: parseInt(document.getElementById('reviewerCount').value) || 0,
             reviewerStatus: document.getElementById('reviewerStatus').value.trim(),
             notes: document.getElementById('notes').value.trim(),
@@ -509,7 +522,7 @@
         const submission = localSubmissions.find(s => s.id === docId);
         if (submission) {
             openModal();
-            document.getElementById('modalTitle').textContent = `编辑: ${submission.shortTitle}`;
+            document.getElementById('modalTitle').textContent = `查看/编辑: ${submission.shortTitle}`;
             document.getElementById('editingFileName').value = docId;
             document.getElementById('submissionNumber').value = submission.number;
             document.getElementById('shortTitle').value = submission.shortTitle;
@@ -521,6 +534,8 @@
             document.getElementById('casLevel').value = submission.casLevel;
             document.getElementById('journalWebsite').value = submission.journalWebsite || '';
             document.getElementById('submissionWebsite').value = submission.submissionWebsite || '';
+            document.getElementById('journalAccount').value = submission.journalAccount || ''; // 新增赋值
+            document.getElementById('manuscriptId').value = submission.manuscriptId || '';     // 新增赋值
             document.getElementById('reviewerCount').value = submission.reviewerCount;
             document.getElementById('reviewerStatus').value = submission.reviewerStatus;
             document.getElementById('notes').value = submission.notes;
@@ -560,7 +575,6 @@
     function exportData() { alert("此功能可直接使用，逻辑与之前相同，只需修改数据源。"); }
 
 </script>
-
 
 </body>
 </html>
